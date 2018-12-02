@@ -50,21 +50,29 @@ func countOccurences(input map[rune]int) map[int]bool {
 	return newmap
 }
 
-func main() {
-	twos := 0
-	threes := 0
-	for _, line := range readInput("input.txt") {
-		fmt.Print(line, ": ")
-		counts := countOccurences(countChars(line))
-		fmt.Println(counts)
-		if counts[2] {
-			twos += 1
-		}
-		if counts[3] {
-			threes += 1
-		}
-
+func roughMatch(left string, right string) bool {
+	mismatched := 0
+	if len(left) != len(right) {
+		return false
 	}
-	fmt.Println("twos: ", twos, ", threes: ", threes, ", multiplied: ", twos * threes)
+	for i, _ := range left {
+		if right[i] != left[i] {
+			mismatched++
+		}
+	}
+	return mismatched == 1
 }
 
+func main() {
+	lines := readInput("input.txt")
+	for _, left := range lines {
+		for _, right := range lines {
+			if roughMatch(left, right) {
+				fmt.Println(left, right)
+			}
+		}
+	}
+	//fmt.Println(roughMatch("aabbccdd", "aabbccdd"))
+	//fmt.Println(roughMatch("aabbccdd", "aabbccde"))
+	//fmt.Println(roughMatch("aabbccdd", "aabbccee"))
+}
