@@ -23,47 +23,6 @@ func readInput(filename string) []string {
 	return lines
 }
 
-func stringToInt(input []string) ([]int, error) {
-	output := make([]int, 0)
-	for _, i := range input {
-		num, err := strconv.Atoi(i)
-		if err != nil {
-			return output, err
-		}
-		output = append(output, num)
-	}
-	return output, nil
-}
-
-func countChars(input string) map[rune]int {
-	charmap := make(map[rune]int)
-	for _, char := range input {
-		charmap[char] += 1
-	}
-	return charmap
-}
-
-func countOccurences(input map[rune]int) map[int]bool {
-	newmap := make(map[int]bool)
-	for _, value := range input {
-		newmap[value] = true
-	}
-	return newmap
-}
-
-func roughMatch(left string, right string) bool {
-	mismatched := 0
-	if len(left) != len(right) {
-		return false
-	}
-	for i, _ := range left {
-		if right[i] != left[i] {
-			mismatched++
-		}
-	}
-	return mismatched == 1
-}
-
 type area struct {
 	name string
 	startY int

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 )
 
@@ -35,7 +36,8 @@ func main() {
 	currentGuard := 0
 	startSleep := 0
 
-	lines := readInput("04/input.sorted.txt")
+	lines := readInput("04/input.txt")
+	sort.Strings(lines)
 	for _, line := range lines {
 		parts := splitRe.FindStringSubmatch(line)
 		timestamp, _ := strconv.Atoi(parts[1] + parts[2] + parts[3] + parts[4] + parts[5])
