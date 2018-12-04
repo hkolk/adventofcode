@@ -9,7 +9,7 @@ import (
 )
 
 func readInput(filename string) []string {
-	lines := []string{}
+	lines := make([]string, 0)
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -44,7 +44,7 @@ func main() {
 	for {
 		for _, value := range numbers {
 			result += value
-			if(found[result]) {
+			if found[result] {
 				fmt.Println("Found duplicate: ", result)
 				os.Exit(-1)
 			}
