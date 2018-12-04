@@ -1,16 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"bufio"
-	"strconv"
-	"os"
+	"fmt"
 	"log"
+	"os"
 	"regexp"
+	"strconv"
 )
 
 func readInput(filename string) []string {
-	lines := []string{}
+	var lines []string
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -19,12 +19,12 @@ func readInput(filename string) []string {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	file.Close()
+	_ = file.Close()
 	return lines
 }
 
 func main() {
-	var splitRe = regexp.MustCompile("\\[([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})\\] (.+)")
+	var splitRe = regexp.MustCompile("\\[([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})] (.+)")
 	var guardRe = regexp.MustCompile("Guard #([0-9]+)")
 
 	guards := make(map[int]map[int]int)
@@ -42,7 +42,7 @@ func main() {
 		text := parts[6]
 		switch text {
 		case "falls asleep":
-			startSleep = timestamp;
+			startSleep = timestamp
 		case "wakes up":
 			for i := startSleep; i < timestamp; i++ {
 				guards[currentGuard][i % 100]++
@@ -71,59 +71,26 @@ func main() {
 	}
 
 	mostSleepyMinute := 0
-	mostOccurences := 0
-	for minute, occurences := range guards[mostSleepyGuard] {
-		if occurences > mostOccurences {
+	mostOccurrences := 0
+	for minute, occurrences := range guards[mostSleepyGuard] {
+		if occurrences > mostOccurrences {
 			mostSleepyMinute = minute
-			mostOccurences = occurences
+			mostOccurrences = occurrences
 		}
 	}
-	fmt.Println("Most sleepy guard:", mostSleepyGuard, "Most sleepy minute:", mostSleepyMinute, "with", mostOccurences, "occurences, total:", mostSleepyGuard * mostSleepyMinute)
+	fmt.Println("Most sleepy guard:", mostSleepyGuard, "Most sleepy minute:", mostSleepyMinute, "with", mostOccurrences, "occurences, total:", mostSleepyGuard * mostSleepyMinute)
 
-	mostOccurences = 0
+	mostOccurrences = 0
 	mostSleepyGuard = 0
 	mostSleepyMinute = 0
 	for minute, guards := range minutes {
-		for guard, occurences := range guards {
-			if occurences > mostOccurences {
-				mostOccurences = occurences
+		for guard, occurrences := range guards {
+			if occurrences > mostOccurrences {
+				mostOccurrences = occurrences
 				mostSleepyGuard = guard
 				mostSleepyMinute = minute
 			}
 		}
 	}
-	fmt.Println("Most sleepy guard:", mostSleepyGuard, "Most sleepy minute:", mostSleepyMinute, "with", mostOccurences, "occurences, total:", mostSleepyGuard * mostSleepyMinute)
-	/*
-	areas := parseInput(lines)
-	for _, area := range areas {
-		for x := area.startX; x < area.startX + area.width; x++ {
-			for y := area.startY; y < area.startY + area.height; y++ {
-				grid[x][y]++
-			}
-		}
-	}
-	overlap := 0
-	for _, line := range grid {
-		//fmt.Println(line)
-		for _, space := range line {
-			if space > 1 {
-				overlap++
-			}
-		}
-	}
-	fmt.Println("Overal: ", overlap)
-	for _, area := range areas {
-		overlapping := false
-		for x := area.startX; x < area.startX + area.width; x++ {
-			for y := area.startY; y < area.startY + area.height; y++ {
-				if grid[x][y] != 1 {
-					overlapping = true
-				}
-			}
-		}
-		if !overlapping {
-			fmt.Println("Non-overlapping area: ", area.name)
-		}
-	}
-	*/
+	fmt.Println("Most sleepy guard:", mostSleepyGuard, "Most sleepy minute:", mostSleepyMinute, "with", mostOccurrences, "occurences, total:", mostSleepyGuard * mostSleepyMinute)
 }
