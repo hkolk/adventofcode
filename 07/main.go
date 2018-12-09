@@ -58,19 +58,18 @@ func part2(nodes map[string]*node, workerCount int, timePerTask int) {
 
 	sb := strings.Builder{}
 
-	workers := []worker{}
+	var workers []*worker
 	for i := 0; i < workerCount; i++ {
-		workers = append(workers, worker{id: i})
+		workers = append(workers, &worker{id: i})
 	}
 
 	loopCounter := 0
 
 	for {
 		// Tick loop
-		for workerId, worker := range workers {
-			if worker.workingTime == 0 {
-				// finish work?
-				if worker.working {
+		for _ , worker := range workers {
+			if worker.working {
+				if worker.workingTime == 0 {
 					name := worker.taskName
 
 					for _, node := range nodes[name].downstream {
@@ -78,12 +77,18 @@ func part2(nodes map[string]*node, workerCount int, timePerTask int) {
 					}
 					delete(nodes, name)
 					sb.WriteString(name)
-					workers[workerId].working = false
-					workers[workerId].taskName = ""
-					workers[workerId].workingTime = 0
+					worker.working = false
+					worker.taskName = ""
+					worker.workingTime = 0
+				} else {
+					worker.workingTime--
 				}
+			}
+		}
+		for _ , worker := range workers {
+			if !worker.working {
 				// take work?
-				processing := []string{}
+				var processing []string
 				for _, node := range nodes {
 					if len(node.upstream) == 0 && !node.processing {
 						processing = append(processing, node.name)
@@ -94,12 +99,10 @@ func part2(nodes map[string]*node, workerCount int, timePerTask int) {
 					sort.Strings(processing)
 					name := processing[0]
 					nodes[name].processing = true
-					workers[workerId].working = true
-					workers[workerId].taskName = name
-					workers[workerId].workingTime = (timePerTask - 1) + int(name[0] - 64)
+					worker.working = true
+					worker.taskName = name
+					worker.workingTime = (timePerTask - 1) + int(name[0] - 64)
 				}
-			} else {
-				workers[workerId].workingTime--
 			}
 		}
 		fmt.Print(loopCounter, "\t")
@@ -112,14 +115,13 @@ func part2(nodes map[string]*node, workerCount int, timePerTask int) {
 		//printNodes(nodes)
 		//printWorkers(workers)
 		if debug && loopCounter > 100 {
-			break;
+			break
 		}
 		if len(nodes) == 0 {
 			break
 		}
 
 	}
-	// seems answer is sometimes one too high... don't know why, don't care
 	fmt.Println("Result:", sb.String(), "in", loopCounter - 1, "seconds")
 }
 
