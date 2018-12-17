@@ -36,10 +36,14 @@ const (
 )
 
 var coordMap map[Coord]SquareType
+var springs map[Coord]bool
+
+var minX, maxX, minY, maxY int
 
 func main() {
 	lines := readInput("17/input.txt")
 	coordMap = make(map[Coord]SquareType)
+	springs = make(map[Coord]bool)
 	for _, line := range lines {
 		var part1, part2, part3 int
 		_, error := fmt.Sscanf(line, "y=%d, x=%d..%d", &part1, &part2, &part3)
@@ -58,8 +62,11 @@ func main() {
 		}
 	}
 	//fmt.Println(coordMap)
-	minX := 9999999; maxX := 0; maxY := 0
+	minX = 9999999; maxX = 0; maxY = 0; minY = 99999999
 	for coord, _ := range coordMap {
+		if coord.y < minY {
+			minY = coord.y
+		}
 		if coord.y > maxY {
 			maxY = coord.y
 		}
@@ -72,16 +79,53 @@ func main() {
 	}
 	//renderMap(coordMap, minX, maxX, maxY)
 
-	tickLoop:
+	runDroplet(Coord{x: 500, y:0}, maxY)
+	//renderMap(coordMap, minX, maxX, maxY)
+	// All the basins are full... now let's do the flow
+	/*for coord, squareType := range coordMap {
+		if squareType == Flow {
+			coordMap[coord] = Sand
+		}
+	}*/
+	fmt.Println("Starting final flow")
+	droplet := Coord{x: 500, y: 0}
+	belowType := coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
+	for belowType != Settled && belowType != Clay {
+		if droplet.y > maxY {
+			break
+		}
+		coordMap[droplet] = Flow
+		droplet = Coord{x: droplet.x, y: droplet.y + 1}
+		belowType = coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
+	}
+	flow(droplet, -1, maxY)
+	flow(droplet, 1, maxY)
+
+	renderMap(coordMap, minX, maxX, maxY)
+	sum := 0
+	for coord, squareType := range coordMap {
+		if coord.y >= minY && coord.y <= maxY {
+			if squareType == Flow || squareType == Settled {
+				sum++
+			}
+		}
+	}
+	fmt.Println("Sum of water:", sum)
+}
+
+
+func runDroplet(spring Coord, maxY int) {
+	spawnCounter := 0
+tickLoop:
 	for tick := 0; tick < 50000; tick++ {
-		droplet := Coord{x:500, y:0}
-		nextDroplet:
+		droplet := spring
+	nextDroplet:
 		for {
 			below := Coord{x: droplet.x, y: droplet.y + 1}
 			belowSquare := coordMap[below]
 			if belowSquare == Clay || belowSquare == Settled {
-				canDropLeft := canDrop(droplet, -1)
-				canDropRight := canDrop(droplet, 1)
+				canDropLeft, leftMost := canDrop(droplet, -1)
+				canDropRight, rightMost := canDrop(droplet, 1)
 				if !canDropLeft && !canDropRight {
 					// find a place to settle
 					left := Coord{x: droplet.x - 1, y: droplet.y}
@@ -107,9 +151,23 @@ func main() {
 						droplet = Coord{x: 500, y: 0}
 						break nextDroplet
 					}
-				} else if canDropLeft && canDropRight {
-					// flip a coin?
-
+				} else if canDropRight && canDropLeft {
+					if springs[droplet] {
+						fmt.Println("In a loop at", droplet)
+						return
+					}
+					springs[droplet] = true
+					fmt.Println("spawn at", leftMost)
+					runDroplet(leftMost, maxY)
+					fmt.Println("spawn at", rightMost)
+					runDroplet(rightMost, maxY)
+					spawnCounter++
+					if spawnCounter > 100 {
+						//renderMap(coordMap, minX, maxX, maxY)
+						return
+					}
+					fmt.Println("stopped at", droplet)
+					break nextDroplet
 				} else if canDropLeft {
 					left := Coord{x: droplet.x - 1, y: droplet.y}
 					coordMap[droplet] = Flow
@@ -141,30 +199,8 @@ func main() {
 			}
 		}*/
 	}
-	renderMap(coordMap, minX, maxX, maxY)
-	// All the basins are full... now let's do the flow
-	/*for coord, squareType := range coordMap {
-		if squareType == Flow {
-			coordMap[coord] = Sand
-		}
-	}*/
-	fmt.Println("Starting final flow")
-	droplet := Coord{x:500, y:0}
-	belowType := coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
-	for belowType != Settled && belowType != Clay {
-		if droplet.y > maxY {
-			break
-		}
-		coordMap[droplet] = Flow
-		droplet = Coord{x: droplet.x, y: droplet.y + 1}
-		belowType = coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
-	}
-	flow(droplet, -1, maxY)
-	flow(droplet, 1, maxY)
-
-
-	//renderMap(coordMap, minX, maxX, maxY)
 }
+
 
 func flow(droplet Coord, direction int, maxY int) {
 	belowType := Clay
@@ -193,14 +229,14 @@ func flow(droplet Coord, direction int, maxY int) {
 	flow(droplet, 1, maxY)
 }
 
-func canDrop(coord Coord, direction int) bool {
+func canDrop(coord Coord, direction int) (bool, Coord) {
 	leftCoord := Coord{x:coord.x + direction, y: coord.y}
 	if coordMap[leftCoord] == Clay || coordMap[leftCoord] == Settled {
-		return false
+		return false, Coord{}
 	}
 	below := Coord{x:leftCoord.x, y:leftCoord.y+1}
 	if coordMap[below] != Clay && coordMap[below] != Settled {
-		return true
+		return true, leftCoord
 	}
 	return canDrop(leftCoord, direction)
 }
