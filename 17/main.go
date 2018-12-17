@@ -35,9 +35,11 @@ const (
 	Droplet SquareType = 5
 )
 
+var coordMap map[Coord]SquareType
+
 func main() {
-	lines := readInput("17/input.test.txt")
-	coordMap := make(map[Coord]SquareType)
+	lines := readInput("17/input.txt")
+	coordMap = make(map[Coord]SquareType)
 	for _, line := range lines {
 		var part1, part2, part3 int
 		_, error := fmt.Sscanf(line, "y=%d, x=%d..%d", &part1, &part2, &part3)
@@ -71,41 +73,51 @@ func main() {
 	//renderMap(coordMap, minX, maxX, maxY)
 
 	tickLoop:
-	for tick := 0; tick < 40; tick++ {
+	for tick := 0; tick < 50000; tick++ {
 		droplet := Coord{x:500, y:0}
 		nextDroplet:
 		for {
 			below := Coord{x: droplet.x, y: droplet.y + 1}
 			belowSquare := coordMap[below]
 			if belowSquare == Clay || belowSquare == Settled {
-				// move left/right
-				left := Coord{x: droplet.x - 1, y: droplet.y}
-				leftSquare := coordMap[left]
-				if leftSquare == Clay || leftSquare == Settled || leftSquare == Flow  {
-					if !canFlow(droplet, coordMap, 1) {
-						// settle
-						if tick == 14 { fmt.Println("canflow was false") }
+				canDropLeft := canDrop(droplet, -1)
+				canDropRight := canDrop(droplet, 1)
+				if !canDropLeft && !canDropRight {
+					// find a place to settle
+					left := Coord{x: droplet.x - 1, y: droplet.y}
+					leftSquare := coordMap[left]
+					if leftSquare == Clay || leftSquare == Settled {
+						right := Coord{x: droplet.x + 1, y: droplet.y}
+						rightSquare := coordMap[right]
+						for rightSquare != Clay && rightSquare != Settled {
+							droplet = right;
+							right = Coord{x: droplet.x + 1, y: droplet.y}
+							rightSquare = coordMap[right]
+						}
 						coordMap[droplet] = Settled
 						droplet = Coord{x: 500, y: 0}
 						break nextDroplet
 					} else {
-						if tick == 14 { fmt.Println("canflow was true") }
-
-						right := Coord{x: droplet.x + 1, y: droplet.y}
-						rightSquare := coordMap[right]
-						if rightSquare == Clay || rightSquare == Settled {
-							// settle
-							coordMap[droplet] = Settled
-							droplet = Coord{x: 500, y: 0}
-							break nextDroplet
-						} else {
-							coordMap[droplet] = Flow
-							droplet = right
+						for leftSquare != Clay && leftSquare != Settled {
+							droplet = left;
+							left = Coord{x: droplet.x - 1, y: droplet.y}
+							leftSquare = coordMap[left]
 						}
+						coordMap[droplet] = Settled
+						droplet = Coord{x: 500, y: 0}
+						break nextDroplet
 					}
-				} else {
+				} else if canDropLeft && canDropRight {
+					// flip a coin?
+
+				} else if canDropLeft {
+					left := Coord{x: droplet.x - 1, y: droplet.y}
 					coordMap[droplet] = Flow
 					droplet = left
+				} else {
+					right := Coord{x: droplet.x + 1, y: droplet.y}
+					coordMap[droplet] = Flow
+					droplet = right
 				}
 
 			} else {
@@ -121,18 +133,67 @@ func main() {
 		}
 
 		coordMap[droplet] = Droplet
-		fmt.Println("===== Tick", tick)
-		renderMap(coordMap, minX, maxX, maxY)
-		for coord, squareType := range coordMap {
+		//fmt.Println("===== Tick", tick)
+		//renderMap(coordMap, minX, maxX, maxY)
+		/*for coord, squareType := range coordMap {
 			if squareType == Flow {
 				coordMap[coord] = Sand
 			}
-		}
+		}*/
 	}
 	renderMap(coordMap, minX, maxX, maxY)
+	// All the basins are full... now let's do the flow
+	/*for coord, squareType := range coordMap {
+		if squareType == Flow {
+			coordMap[coord] = Sand
+		}
+	}*/
+	fmt.Println("Starting final flow")
+	droplet := Coord{x:500, y:0}
+	belowType := coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
+	for belowType != Settled && belowType != Clay {
+		if droplet.y > maxY {
+			break
+		}
+		coordMap[droplet] = Flow
+		droplet = Coord{x: droplet.x, y: droplet.y + 1}
+		belowType = coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
+	}
+	flow(droplet, -1, maxY)
+	flow(droplet, 1, maxY)
+
+
+	//renderMap(coordMap, minX, maxX, maxY)
 }
 
-func canFlow(coord Coord, coordMap map[Coord]SquareType, direction int) bool {
+func flow(droplet Coord, direction int, maxY int) {
+	belowType := Clay
+	for belowType == Clay || belowType == Settled {
+		newCoord := Coord{x: droplet.x + direction, y: droplet.y}
+		if coordMap[newCoord] != Clay && coordMap[newCoord] != Settled {
+			// move into that direction
+			coordMap[droplet] = Flow
+			droplet = newCoord
+			belowType = coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
+		} else {
+			// stuck
+			coordMap[droplet] = Flow
+			return
+		}
+	}
+	for belowType != Clay && belowType != Settled {
+		if droplet.y > maxY {
+			return
+		}
+		coordMap[droplet] = Flow
+		droplet = Coord{x: droplet.x, y: droplet.y + 1}
+		belowType = coordMap[Coord{x: droplet.x, y: droplet.y + 1}]
+	}
+	flow(droplet, -1, maxY)
+	flow(droplet, 1, maxY)
+}
+
+func canDrop(coord Coord, direction int) bool {
 	leftCoord := Coord{x:coord.x + direction, y: coord.y}
 	if coordMap[leftCoord] == Clay || coordMap[leftCoord] == Settled {
 		return false
@@ -141,7 +202,7 @@ func canFlow(coord Coord, coordMap map[Coord]SquareType, direction int) bool {
 	if coordMap[below] != Clay && coordMap[below] != Settled {
 		return true
 	}
-	return canFlow(leftCoord, coordMap, direction)
+	return canDrop(leftCoord, direction)
 }
 
 func toChar(square SquareType) string {
