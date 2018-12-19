@@ -102,15 +102,20 @@ func main() {
 	flow(droplet, 1, maxY)
 
 	renderMap(coordMap, minX, maxX, maxY)
-	sum := 0
+	flowSum := 0
+	settledSum := 0
 	for coord, squareType := range coordMap {
 		if coord.y >= minY && coord.y <= maxY {
-			if squareType == Flow || squareType == Settled {
-				sum++
+			if squareType == Flow {
+				flowSum++
+			}
+			if squareType == Settled {
+				settledSum++
 			}
 		}
 	}
-	fmt.Println("Sum of water:", sum)
+	fmt.Println("Sum of water:", flowSum + settledSum)
+	fmt.Println("Sum of settled water:", settledSum)
 }
 
 
